@@ -115,7 +115,7 @@ def generate_html_relations_table(json_data):
 def format_target_and_anchors(text): #new_func
     """Извлекаем Target and anchor objects"""
     
-    with open("../outputs/objects.json", "r") as file:
+    with open("./outputs/objects.json", "r") as file:
             objects_data = json.load(file) 
 
     def get_description_by_id(data, target_id):

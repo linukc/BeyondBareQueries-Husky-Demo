@@ -1,3 +1,35 @@
+<p align="center">
+
+  <h1 align="center">Beyond Bare Queries: <br>
+Open-Vocabulary Object Grounding <br> with 3D Scene Graph</h1>
+  <p align="center">
+    <a href="https://github.com/linukc">Linok Sergey</a>
+    ·
+    <a href="https://github.com/wingrune">Tatiana Zemskova</a>
+    ·
+    Svetlana Ladanova
+    ·
+    Roman Titkov
+    ·
+    Dmitry Yudin
+    <br>
+    Maxim Monastyrny
+    ·
+    Aleksei Valenkov
+  </p>
+
+  <h4 align="center"><a href="https://linukc.github.io/BeyondBareQueries/">Project</a> | <a href="http://arxiv.org/abs/2406.07113">arXiv</a> | <a href="https://github.com/linukc/BeyondBareQueries">Code</a></h4>
+  <div align="center"></div>
+</p>
+
+<p align="center">
+<img src="BeyondBareQueries/assets/pipeline.png" width="80%">
+</p>
+
+Репозиторий для кода для демонстрации работы пайплайна BBQ на роботе с отправкой запроса пользователя через Телеграм-бот.
+
+В репозитории представлен модифицированный код пайплайна BBQ, ссылка на оригинальный репозиторий: https://github.com/linukc/BeyondBareQueries.
+
 0. Сборка докер-образа с BBQ:
 
 ```
@@ -71,4 +103,18 @@ python3 camera_server.py
 
 ```
 bash ./stop.sh
+```
+
+## Citation
+If you find this work helpful, please consider citing our work as:
+```
+@misc{linok2024barequeriesopenvocabularyobject,
+      title={Beyond Bare Queries: Open-Vocabulary Object Grounding with 3D Scene Graph}, 
+      author={Sergey Linok and Tatiana Zemskova and Svetlana Ladanova and Roman Titkov and Dmitry Yudin and Maxim Monastyrny and Aleksei Valenkov},
+      year={2024},
+      eprint={2406.07113},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2406.07113}, 
+}
 ```
