@@ -115,8 +115,17 @@ def generate_html_relations_table(json_data):
 def format_target_and_anchors(text): #new_func
     """Извлекаем Target and anchor objects"""
     
+    with open("../outputs/objects.json", "r") as file:
+            objects_data = json.load(file) 
+
+    def get_description_by_id(data, target_id):
+        for item in data:
+            if item['id'] == int(target_id):
+                return item['description']
+        return None  
+    
     if '{' in text and '}' in text:
-        json_part = text[text.find('{'):text.find('}')+1]
+        json_part = text[text.find('{'):text.rfind('}')+1]
         try:
             data = json.loads(json_part.replace("'", '"'))
             referred_objects = data['referred objects']
@@ -127,14 +136,14 @@ def format_target_and_anchors(text): #new_func
     for i in range(len(referred_objects)):
         try:
             obj, id = referred_objects[i].split(" with id ")
-            referred_objects[i] = f"{id}: {obj}"
+            referred_objects[i] = f"{id}: {get_description_by_id(objects_data, id)}"
         except:
             pass
 
     for i in range(len(anchors)):
         try:
             obj, id = anchors[i].split(" with id ")
-            anchors[i] = f"{id}: {obj}"
+            anchors[i] = f"{id}: {get_description_by_id(objects_data, id)}"
         except:
             pass
 
