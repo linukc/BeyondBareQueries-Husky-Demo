@@ -22,87 +22,94 @@ Open-Vocabulary Object Grounding <br> with 3D Scene Graph</h1>
   <div align="center"></div>
 </p>
 
-<p align="center">
-<img src="BeyondBareQueries/assets/pipeline.png" width="80%">
-</p>
-
 Репозиторий для кода для демонстрации работы пайплайна BBQ на роботе с отправкой запроса пользователя через Телеграм-бот.
 
 В репозитории представлен модифицированный код пайплайна BBQ, ссылка на оригинальный репозиторий: https://github.com/linukc/BeyondBareQueries.
 
-0. Сборка докер-образа с BBQ:
-
-```
-cd BeyondBareQueries
-bash docker/build.sh
-```
+0. Сборка докер-образа с BBQ (можно оригинальный с perception_models)
 
 1. Запуск контейнера BBQ:
 
 ```
-bash start.sh /datasets/
+./docker/start.sh
 ```
 
-2. Запуск сущностей, живущих на компьютере с пайплайном (запуск из контейнера, зайти в контейнер - `bash ./into.sh`). Каждая сущность запускается в отдельном окне терминала:
+2. Запуск сущностей (запуск из контейнера, зайти в контейнер - `./docker/into.sh`). Каждая сущность запускается в отдельном окне терминала:
 
 a. Телеграм-бот:
 
 ```
-bash ./into.sh
-bash bot.sh
+./docker/into.sh
+./telegram/bot.sh
 ```
 
-b. Сервер с PLM моделью:
+b. Сервер с PLM моделью (нужен будет HGtoken):
 
 ```
-bash ./into.sh
+./docker/into.sh
 conda activate perception_models
-cd ~/BeyondBareQueries/BeyondBareQueries/bbq/models
-CUDA_VISIBLE_DEVICES=1 uvicorn plm_server:app --host 0.0.0.0 --port 31623
+cd ~/BeyondBareQueries/BeyondBareQueries/bbq_core/models
+CUDA_VISIBLE_DEVICES=0 uvicorn plm_server:app --host 0.0.0.0 --port 31623
 ```
 
-c. Сервер с BBQ пайплайном:
+c. Сервер с BBQ пайплайном ответа на вопрос (нужен будет HGtoken):
 
 ```
-bash ./into.sh
-cd ~/BeyondBareQueries/BeyondBareQueries
-bash server.sh
+./docker/into.sh
+./BeyondBareQueries/deductive_server.sh
 ```
 
-
-d. Сервер с демо:
+d. Сервер с демо (gradio):
 
 ```
-bash ./into.sh
+./docker/into.sh
 conda activate perception_models
-cd ~/BeyondBareQueries/BeyondBareQueries
-python demo_local.py
+cd ~/BeyondBareQueries/
+python gradio.py
 ```
 
 После чего либо воспользоваться автоматическим пробросом портов от VS Code, либо самому пробросить порты так, чтобы можно было визуализировать демо в браузере компьютера, подключенного к серверу.
 
-3. Запуск сервера, отдающего изображения:
-
-a. Локальный сервер (по запросу отдаёт заранее сохраненные изображения):
-
+3. Настройка ROS
 ```
-bash ./into.sh
-python local_camera_server.py
+pip install empy==3.3.4
+pip install rospkg
+pip install --upgrade numpy==1.26.4
 ```
 
+Собрать сообщенияs:
+```
+./docker_ros/build.sh (optional)
+./docker_ros/start.sh (optional)
+./docker_ros/into.sh
+cd ..
+mkdir -p custom_msg/src
+cd custom_msg/src
+git clone https://github.com/cog-model/husky_demo_scripts/tree/main/husky_deom_transport
+cd ..
+catkin_make
+source devel/setup.bash
+```
 
-b. Сервер с камерами на роботе:
+Процесс с BBQ пайплайном построения карты. Нужно запускать в контейнере с ros1 (папка docker_ros):
 
 ```
-aima em load-env
-cd ~/bbq_demo/
-python3 camera_server.py
+./docker_ros/build.sh (optional)
+./docker_ros/start.sh (optional)
+./docker_ros/into.sh
+# настройка ROS
+source /opt/ros/noetic/setup.bash
+export ROS_MASTER_URI=http://172.88.0.241:11311
+export ROS_IP=10.43.71.82
+#
+./BeyondBareQueries/map_cycle.sh
 ```
+Для отладки: rostopic pub /chatter std_msgs/String "data: 'hello world'"
 
 4. Остановить контейнер с демо:
 
 ```
-bash ./stop.sh
+./docker/stop.sh
 ```
 
 ## Citation

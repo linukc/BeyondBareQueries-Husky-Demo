@@ -55,6 +55,4 @@ secrets.yaml
 *.ogg
 *.pem
 
-BeyondBareQueries/outputs
-BeyondBareQueries/downloaded_images
-BeyondBareQueries/crop_images
+outputs/
