@@ -2,6 +2,7 @@
 import os
 import yaml
 import json
+import struct
 import threading
 
 import cv2
@@ -41,7 +42,7 @@ def save_depth_with_colormap(depth_array, save_path, max_depth=5.0):
     depth_normalized = (depth_clipped / max_depth * 255).astype(np.uint8)
 
     # Apply colormap
-    depth_colored = cv2.applyColorMap(depth_normalized, cv2.COLORMAP_PLASMA)
+    depth_colored = cv2.applyColorMap(depth_normalized, cv2.COLORMAP_JET)
 
     # Save image
     cv2.imwrite(save_path, depth_colored)
@@ -56,9 +57,13 @@ def compressed_image_to_numpy(msg: CompressedImage, is_depth=False) -> np.ndarra
         raise ValueError("CompressedImage data is empty")
 
     if is_depth:
-        # depth может быть сохранён в PNG 16UC1
-        np_arr = np.frombuffer(msg.data[12:], np.uint8)
-        cv_image = cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)
+        # depth 32FC1
+        raw_header, raw_data = msg.data[:12], msg.data[12:]
+        depth_img_raw = cv2.imdecode(np.frombuffer(raw_data, np.uint8), cv2.IMREAD_UNCHANGED)
+        [_, depthQuantA, depthQuantB] = struct.unpack('iff', raw_header)
+        depth_img_scaled = depthQuantA / (depth_img_raw.astype(np.float32) - depthQuantB)
+        depth_img_scaled[depth_img_raw==0] = 0
+        cv_image = depth_img_scaled
     else:
         np_arr = np.frombuffer(msg.data, np.uint8)
         cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
@@ -111,13 +116,14 @@ class SensorProcessor:
             rospy.loginfo("Processing sensor data: №{}".format(self.STEP_IDX))
             # Здесь может быть любая обработка данных
             color = compressed_image_to_numpy(msg.color, is_depth=False)
-            depth = compressed_image_to_numpy(msg.depth, is_depth=True) / 1000 # depth scale
+            depth = compressed_image_to_numpy(msg.depth, is_depth=True)
             pose = pose_to_matrix(msg.pose)
             frame = color, depth, INTRINSICS, pose
             Image.fromarray(color).save(f"{SAVE_PATH}/latest_scan.png")
             save_depth_with_colormap(depth, f"{SAVE_PATH}/latest_depth.png")
             self.COLORS_BANK.append(color)
             self.POSES_BANK.append(pose)
+
             nodes_constructor.integrate(self.STEP_IDX, frame) # frame = color, depth, intrinsics, pose
             rospy.loginfo("Trigger sensor callback.")
             torch.cuda.empty_cache()
