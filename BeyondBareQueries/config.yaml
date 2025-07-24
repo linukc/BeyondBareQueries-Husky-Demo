@@ -31,10 +31,10 @@ nodes_constructor:
     num_patches_h: 63
     num_patches_w: 113
   detections_assembler:
-    mask_conf_threshold: 0.9
-    mask_area_threshold: 500
+    mask_conf_threshold: 0.85
+    mask_area_threshold: 75
     max_bbox_area_ratio: 0.75
-    min_points_threshold: 150
+    min_points_threshold: 15
     downsample_voxel_size: 0.025
     dbscan_remove_noise: True
     dbscan_eps: 0.05
@@ -53,7 +53,7 @@ nodes_constructor:
     desired_height: 720
     desired_width: 1280
   postprocessing:
-    obj_min_points: 150
+    obj_min_points: 15
     obj_min_detections: 3
   # output_path: "/home/docker_user/BeyondBareQueries/output/scenes"
   # output_name_nodes: "replica_room0.json"
