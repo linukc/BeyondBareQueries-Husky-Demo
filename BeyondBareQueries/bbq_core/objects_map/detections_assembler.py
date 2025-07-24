@@ -206,7 +206,7 @@ class DetectionsAssembler:
     def create_object_pcd(self, mask, depth_array, cam_K):
         # depth_array = depth_array[..., 0] #.cpu().numpy()
         # Also remove points with invalid depth values
-        мmask = np.logical_and(mask, np.logical_and(depth_array > 1.5, depth_array < 5.0))
+        mask = np.logical_and(mask, np.logical_and(depth_array > 1.5, depth_array < 5.0))
 
         if mask.sum() == 0:
             pcd = o3d.geometry.PointCloud()
