@@ -77,8 +77,6 @@ class DetectionsAssembler:
             # Blend mask with image
             segmentation_vis = cv2.addWeighted(segmentation_vis, 1.0, color_layer, 0.5, 0)
 
-        # Save and show the final image
-        #cv2.imwrite("overlayed_masks_sam.png", image)
         #exit()
         masks_result["mask"] = np.take(masks_result["mask"], idx_to_save, axis=0)
         masks_result["xyxy"] = np.take(masks_result["xyxy"], idx_to_save, axis=0)
