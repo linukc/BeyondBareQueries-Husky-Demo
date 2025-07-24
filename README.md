@@ -72,6 +72,9 @@ python gradio.py
 
 3. Настройка ROS
 ```
+./docker_ros/build.sh (optional)
+./docker_ros/start.sh (optional)
+./docker_ros/into.sh
 pip install empy==3.3.4
 pip install rospkg
 pip install --upgrade numpy==1.26.4
@@ -82,10 +85,11 @@ pip install --upgrade numpy==1.26.4
 ./docker_ros/build.sh (optional)
 ./docker_ros/start.sh (optional)
 ./docker_ros/into.sh
+source /opt/ros/noetic.setup.bash
 cd ..
 mkdir -p custom_msg/src
 cd custom_msg/src
-git clone https://github.com/cog-model/husky_demo_scripts/tree/main/husky_deom_transport
+git clone https://github.com/cog-model/husky_demo_scripts/
 cd ..
 catkin_make
 source devel/setup.bash
@@ -102,6 +106,8 @@ source /opt/ros/noetic/setup.bash
 export ROS_MASTER_URI=http://172.88.0.241:11311
 export ROS_IP=10.43.71.82
 #
+cd ..
+cd BeyondBareQueries
 ./BeyondBareQueries/map_cycle.sh
 ```
 Для отладки: rostopic pub /chatter std_msgs/String "data: 'hello world'"
