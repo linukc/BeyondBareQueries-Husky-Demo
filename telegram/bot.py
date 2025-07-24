@@ -61,6 +61,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(welcome_text)
 
+async def clear(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    url = 'https://0.0.0.0:4444/first'
+    response = requests.post(url, data="/clear", verify=False)
+    print(response)
+    await update.message.reply_text(f"GradIO web was cleared.")
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик текстовых сообщений"""
     user_text = update.message.text
@@ -168,11 +174,8 @@ async def process_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text(f"Финальный ответ робота: {select}")
 
-
-
         # Отправляем результаты пользователю
         await update.message.reply_text(f"Робот готов получать новые запросы.")
-            
 
         context.user_data.pop('text_query', None)
         
@@ -219,6 +222,7 @@ def main():
     
     # Регистрация обработчиков
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("clear", clear))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(MessageHandler(filters.VOICE, handle_voice))
     application.add_error_handler(error_handler)
