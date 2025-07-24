@@ -1,5 +1,6 @@
 import os
 import yaml
+import ssl
 import time
 import warnings
 warnings.filterwarnings('ignore')
@@ -14,9 +15,8 @@ from tqdm import tqdm
 from loguru import logger
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
-from BeyondBareQueries.bbq_core.models.plm_client import PlmChat
 from BeyondBareQueries.bbq_core.grounding.llm_interface import Llama3
-# from BeyondBareQueries.bbq_utils.draw import draw_answer
+from BeyondBareQueries.bbq_utils.draw import draw_answer
 
 import logging.config
 logging.config.dictConfig({
@@ -25,7 +25,7 @@ logging.config.dictConfig({
 })
 
 # Путь к файлу, куда клиент отправляет текст
-TEXT_FILE = "text.txt"
+# TEXT_FILE = "text.txt"
 # COLOR_PATH = "downloaded_images/image.png"
 # DEPTH_PATH = "downloaded_images/depth.png"
 # POSE_PATH = "pose.txt"
@@ -45,8 +45,6 @@ ANSWERS = None
 hash = datetime.now()
 
 if not DEBUG:
-    chat = PlmChat()
-    logger.info("PLM chat is initialized.")
     llm = Llama3(LLAMA_PATH)
     logger.info("LLama3 chat is initialized.")
 
@@ -70,7 +68,18 @@ class CustomHandler(SimpleHTTPRequestHandler):
             #         print("Images extracted to 'downloaded_images/'")
             # else:
             #     print("Server error:", response.text)
-            print("Getting image has not implemented yet !!!!!!!")
+            # print("Getting image has not implemented yet !!!!!!!")
+            if user_query == '/clear':
+                print("Lets clear gradio web")
+                with open(os.path.join(SAVE_PATH, "user_query.txt"), "w") as f:
+                    f.write(user_query)
+                response_string = json.dumps({'message': user_query})
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(response_string)))
+                self.end_headers()
+                self.wfile.write(response_string.encode())
+                return post_data
 
             end = time.time()
             print("Elapsed time:", end - start, "seconds")
@@ -128,13 +137,11 @@ def main_first(user_query):
     with open(os.path.join(SAVE_PATH, "user_query.txt"), "w") as f:
         f.write(user_query)
 
-    # result = describe_objects(objects)
-    # logger.info('Saving objects.')
-    # with open(os.path.join(SAVE_PATH, "objects.json"), "w") as f:
-    #     json.dump(result, f, indent=2)
     with open(os.path.join(SAVE_PATH, "objects.json"), "r") as f:
        result = json.load(f)
-    
+
+    draw_answer(result, [], [], [], user_query, "dummy answer", "som_objects", SAVE_PATH)
+
     if not DEBUG:
         llm.set_scene(os.path.join(SAVE_PATH, "objects.json"))
         logger.info("Selecting relevant nodes")
@@ -159,15 +166,15 @@ def main_first(user_query):
             anchors.append(0)
 
     #segmentation1 = deepcopy(segmentation)
-    #draw_answer(result, targets, anchors, relations, segmentation1, depth, INTRINSICS, pose, user_query, json_answer, "relevant_objects.png")
-    print("Draw answers has not implemented yet !!!!!")
+    draw_answer(result, targets, anchors, relations, user_query, json_answer, "relevant_objects", SAVE_PATH)
+    #print("Draw answers has not implemented yet !!!!!")
     # return (result, targets, anchors, relations, segmentation, depth, INTRINSICS, pose, user_query, related_objects, json_answer)
 
-    return (user_query, related_objects, targets, anchors, relations, json_answer)
+    return (user_query, related_objects, result, targets, anchors, relations, json_answer)
     
 def main_second(answers):
     #result, targets, anchors, relations, segmentation, depth, INTRINSICS, pose, user_query, related_objects, json_answer = answers
-    user_query, related_objects, targets, anchors, relations, json_answer = answers
+    user_query, related_objects, result, targets, anchors, relations, json_answer = answers
     logger.info("Selecting reffered object")
     full_answer, final_answer, relations, pretty_answer = llm.select_referred_object(user_query, related_objects)
     logger.info(full_answer)
@@ -175,7 +182,7 @@ def main_second(answers):
     targets = [obj['id'] for obj in related_objects['target_objects'] if obj['id'] == final_answer]
     targets += [obj['id'] for obj in related_objects['anchor_objects'] if obj['id'] == final_answer]
 
-    #final_targets = [obj['id'] for obj in related_objects['target_objects'] if obj['id'] == final_answer]
+    final_targets = [obj['id'] for obj in related_objects['target_objects'] if obj['id'] == final_answer]
     filtered_relations = []
 
     for rel in relations:
@@ -187,17 +194,17 @@ def main_second(answers):
     json_answer = pretty_answer
     # segmentation2 = deepcopy(segmentation)
 
-    #draw_answer(result, targets, anchors, filtered_relations, segmentation2, depth, INTRINSICS, pose, user_query, json_answer, "final_answer.png", final_targets=final_targets)
-    print("Draw answer has not implemented yet !!!")
+    draw_answer(result, targets, anchors, filtered_relations, user_query, json_answer, "final_answer", SAVE_PATH, final_targets=final_targets)
+    #print("Draw answer has not implemented yet !!!")
     return json_answer
 
 def run_server():
     httpd = HTTPServer(('0.0.0.0', 4444), CustomHandler)
-    # httpd.socket = ssl.wrap_socket(httpd.socket,
-    #                             server_side=True,
-    #                             keyfile="key.pem",
-    #                             certfile="cert.pem")
-    # print("Server running on https://localhost:4444")
+    httpd.socket = ssl.wrap_socket(httpd.socket,
+                                server_side=True,
+                                keyfile="key.pem",
+                                certfile="cert.pem")
+    print("Server running on https://localhost:4444")
     print("start server")
     httpd.serve_forever()
 

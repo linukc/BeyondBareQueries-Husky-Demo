@@ -7,19 +7,19 @@ import json
 INTERVAL = 0.1
 
 LOCAL_FILES = {
-"INIT_IMAGE_2D": "downloaded_images/image.png",
+#"INIT_IMAGE_2D": "downloaded_images/image.png",
 
 "SOM_IMAGE_3D": "outputs/3d_som_objects.gif",
-"SOM_IMAGE_2D": "outputs/overlayed_masks_sam_and_graph_som_objects.png",
+#"SOM_IMAGE_2D": "outputs/overlayed_masks_sam_and_graph_som_objects.png",
 "SOM_IMAGE_TABLE": "outputs/table_som_objects.json",
 
 "RELEVANT_OBJECTS_3D": "outputs/3d_relevant_objects.gif",
-"RELEVANT_OBJECTS_2D": "outputs/overlayed_masks_sam_and_graph_relevant_objects.png",
+#"RELEVANT_OBJECTS_2D": "outputs/overlayed_masks_sam_and_graph_relevant_objects.png",
 "RELEVANT_OBJECTS_TEXT": "outputs/relevant_objects.txt",
 "RELEVANT_OBJECTS_TABLE": "outputs/table_relevant_objects.json",
 
 "FINAL_ANSWER_3D": "outputs/3d_final_answer.gif",
-"FINAL_ANSWER_2D": "outputs/overlayed_masks_sam_and_graph_final_answer.png",
+#"FINAL_ANSWER_2D": "outputs/overlayed_masks_sam_and_graph_final_answer.png",
 "FINAL_ANSWER_TEXT": "outputs/final_answer.txt",
 "FINAL_ANSWER_TABLE": "outputs/table_final_answer.json",
 }
@@ -46,9 +46,9 @@ DUMMY_GIF = "gradio_utils/loading.gif"
 DUMMY_TXT = "gradio_utils/loading.txt"
 DUMMY_TABLE = "gradio_utils/table.json"
 DUMMY_OUTPUTS = {
-"INIT_IMAGE_2D": DUMMY_GIF,
+#"INIT_IMAGE_2D": DUMMY_GIF,
 "SOM_IMAGE_3D": DUMMY_GIF,
-"SOM_IMAGE_2D": DUMMY_GIF,
+#"SOM_IMAGE_2D": DUMMY_GIF,
 "SOM_IMAGE_TABLE": DUMMY_TABLE,
 "USER_QUERY": DUMMY_QUERY,
 "RELEVANT_OBJECTS_3D": DUMMY_GIF,
@@ -56,7 +56,7 @@ DUMMY_OUTPUTS = {
 "RELEVANT_OBJECTS_TEXT": DUMMY_TXT,
 "RELEVANT_OBJECTS_TABLE": DUMMY_TABLE,
 "FINAL_ANSWER_3D": DUMMY_GIF,
-"FINAL_ANSWER_2D": DUMMY_GIF,
+#"FINAL_ANSWER_2D": DUMMY_GIF,
 "FINAL_ANSWER_TEXT": DUMMY_TXT,
 "FINAL_ANSWER_TABLE": DUMMY_TABLE,
 }
@@ -211,14 +211,14 @@ def load_image_info(current_outputs, updated_keys):
     else:
         obj_3d = current_outputs["SOM_IMAGE_3D"]
 
-    if current_outputs["FINAL_ANSWER_2D"] != DUMMY_OUTPUTS["FINAL_ANSWER_2D"]:
-        obj_2d = current_outputs["FINAL_ANSWER_2D"]
-    elif current_outputs["RELEVANT_OBJECTS_2D"] != DUMMY_OUTPUTS["RELEVANT_OBJECTS_2D"]:
-        obj_2d = current_outputs["RELEVANT_OBJECTS_2D"]
-    elif current_outputs["SOM_IMAGE_2D"] != DUMMY_OUTPUTS["SOM_IMAGE_2D"]:
-        obj_2d = current_outputs["SOM_IMAGE_2D"]
-    else:
-        obj_2d = current_outputs["INIT_IMAGE_2D"]
+    # if current_outputs["FINAL_ANSWER_2D"] != DUMMY_OUTPUTS["FINAL_ANSWER_2D"]:
+    #     obj_2d = current_outputs["FINAL_ANSWER_2D"]
+    # elif current_outputs["RELEVANT_OBJECTS_2D"] != DUMMY_OUTPUTS["RELEVANT_OBJECTS_2D"]:
+    #     obj_2d = current_outputs["RELEVANT_OBJECTS_2D"]
+    # elif current_outputs["SOM_IMAGE_2D"] != DUMMY_OUTPUTS["SOM_IMAGE_2D"]:
+    #     obj_2d = current_outputs["SOM_IMAGE_2D"]
+    # else:
+    #     obj_2d = current_outputs["INIT_IMAGE_2D"]
 
     with open(current_outputs["RELEVANT_OBJECTS_TABLE"], 'r') as f:
         json1 = json.load(f)
@@ -273,7 +273,7 @@ def load_image_info(current_outputs, updated_keys):
         update_if("OBJECTS_3D", obj_3d),   # RELEVANT_OBJECTS_3D
         update_if("OBJECTS_TABLE", obj_table),              # RELEVANT_OBJECTS_TABLE
         update_if("RELATIONS_TABLE", rel_table),                # RELATIONS_TABLE
-        update_if("OBJECTS_2D", obj_2d),   # RELEVANT_OBJECTS_2D
+        # update_if("OBJECTS_2D", obj_2d),   # RELEVANT_OBJECTS_2D
         update_if("OBJECTS_TEXT", obj_text),               # RELEVANT_OBJECTS_TEXT
         update_if("ANSWER_TEXT", final_answer),           # FINAL_ANSWER_TEXT
         update_if("USER_QUERY", user_query)                   # USER_QUERY
@@ -284,6 +284,11 @@ def get_local_file_timestamp(local_path):
         return int(os.path.getmtime(local_path))
     return None
 
+def check_clear_web():
+    with open(USER_QUERY, 'r') as f:
+        user_query = f.read()
+    return user_query == '/clear'
+
 def monitor_and_update():
     last_mtimes = {key: get_local_file_timestamp(path) for key, path in LOCAL_FILES.items()}
     query_mtimes = get_local_file_timestamp(USER_QUERY)
@@ -292,12 +297,16 @@ def monitor_and_update():
         time.sleep(INTERVAL)
         if query_mtimes != get_local_file_timestamp(USER_QUERY):
             query_mtimes = get_local_file_timestamp(USER_QUERY)
+            if check_clear_web():
+                yield load_image_info(DUMMY_OUTPUTS, set(list(LOCAL_FILES.keys())+["USER_QUERY"]))
+                continue
             current_outputs = DUMMY_OUTPUTS.copy()
             current_outputs["USER_QUERY"] = USER_QUERY
-            current_outputs["INIT_IMAGE_2D"] = LOCAL_FILES["INIT_IMAGE_2D"]
+            # current_outputs["INIT_IMAGE_2D"] = LOCAL_FILES["INIT_IMAGE_2D"]
             time.sleep(0.5)
             yield load_image_info(current_outputs, set(list(LOCAL_FILES.keys())+["USER_QUERY"]))
-            break_out = set(["INIT_IMAGE_2D"])
+            # break_out = set(["INIT_IMAGE_2D"])
+            break_out = set()
             while True:
                 updated_keys = set()
                 for key, path in LOCAL_FILES.items():
@@ -328,11 +337,12 @@ def demo():
                 objects_table = gr.HTML()
             with gr.Column(scale=1):
                 relations_table = gr.HTML()
-            img_1_2d = gr.Image(height=400, scale=3)
+            # img_1_2d = gr.Image(height=400, scale=3)
         objects_section_1 = gr.HTML()
         objects_section_2 = gr.HTML()
 
-        interface.load(monitor_and_update, None, [img_1_3d, objects_table, relations_table, img_1_2d, objects_section_1, objects_section_2, markdown_display])
+        # interface.load(monitor_and_update, None, [img_1_3d, objects_table, relations_table, img_1_2d, objects_section_1, objects_section_2, markdown_display])
+        interface.load(monitor_and_update, None, [img_1_3d, objects_table, relations_table, objects_section_1, objects_section_2, markdown_display])
     return interface
 
 #demo().launch(share=True)

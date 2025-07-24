@@ -7,7 +7,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
 
-
 font = cv2.FONT_HERSHEY_SIMPLEX  # Font type
 font_scale = 0.75  # Font size
 COLOR_CV = (0, 0, 0)  # Text color (BGR: red)
@@ -80,9 +79,9 @@ def project_point_cloud_to_image(image, depth_image, camera_pose, intrinsics_mat
     """
     return pixel_coords
 
-def draw_answer(result, targets, anchors, relations, segmentation, depth, intrinsics, pose, user_query, LLM_answer, save_filename, SAVE_PATH, no_json=True, final_targets=[]):
+def draw_answer(result, targets, anchors, relations, user_query, LLM_answer, save_filename, SAVE_PATH, no_json=True, final_targets=[]):
     json_table = {'objects': [], 'relations': []}
-    camera_pose = np.linalg.inv(pose)
+    # camera_pose = np.linalg.inv(pose)
 
     objects_by_id = {
         obj['id']: obj['bbox_center']
@@ -146,7 +145,10 @@ def draw_answer(result, targets, anchors, relations, segmentation, depth, intrin
         ax1.set_zlabel('Z')
 
     targets_ids = []
-    if len(targets) > 0:
+    if len(targets) > 1:
+        print(f"Result: {[obj['id'] for obj in result]}")
+        print(f"Targets: {targets}")
+        print(f"Final targets: {final_targets}")
         points = np.array([
             obj['bbox_center'] for obj in result
             if 'A wall on the side of a building' not in obj['description'] and obj['id'] in targets and obj['id'] not in final_targets
@@ -156,6 +158,7 @@ def draw_answer(result, targets, anchors, relations, segmentation, depth, intrin
                 ]  # Labels for each point
         targets_ids = [l.split(':')[0] for l in labels]
         # Extract X, Y, Z coordinates
+        print(points.shape)
         x, y, z = points[:, 0], points[:, 1], points[:, 2]
 
         # Plot points
@@ -196,97 +199,42 @@ def draw_answer(result, targets, anchors, relations, segmentation, depth, intrin
     rot_animation = animation.FuncAnimation(
         fig, update, frames=elev_angles, interval=200, blit=False
     )
-    gif_path = os.path.join(SAVE_PATH, f"3d_{save_filename.split('.')[0]}.gif")
+    gif_path = os.path.join(SAVE_PATH, f"3d_{save_filename}.gif")
     rot_animation.save(gif_path, dpi=80, writer='pillow')
 
     information = f"User query: {user_query}\n"
 
-    with open(os.path.join(SAVE_PATH, f"{save_filename.split('.')[0]}.txt"), "w") as f:
+    with open(os.path.join(SAVE_PATH, f"{save_filename}.txt"), "w") as f:
         f.write(information)    
     
     LLM_answer = str(LLM_answer).replace('\n', '').replace('\\', '')
     information = f"LLM answer: {LLM_answer}"
 
-    with open(os.path.join(SAVE_PATH, f"{save_filename.split('.')[0]}.txt"), "a") as f:
+    with open(os.path.join(SAVE_PATH, f"{save_filename}.txt"), "a") as f:
         f.write(information)    
 
     for rel in relations:
         if rel[0] not in targets:
             continue
-        x1, y1, z1 = objects_by_id[rel[0]]
-        x2, y2, z2 = objects_by_id[rel[1]]
+      #  x1, y1, z1 = objects_by_id[rel[0]]
+      #  x2, y2, z2 = objects_by_id[rel[1]]
 
-        line_3d = np.array([
-            [x1, y1, z1],  # center 1
-            [x2, y2, z2],  # bbox2
-        ])
+      #  line_3d = np.array([
+      #      [x1, y1, z1],  # center 1
+      #      [x2, y2, z2],  # bbox2
+      #  ])
 
-        line2d = project_point_cloud_to_image(segmentation, depth, camera_pose, intrinsics, line_3d)
-        #print(line2d)
-        cv2.line(segmentation, tuple(line2d[0]), tuple(line2d[1]), (255, 255, 0), 2)
+      #  line2d = project_point_cloud_to_image(segmentation, depth, camera_pose, intrinsics, line_3d)
+      #  #print(line2d)
+      #  cv2.line(segmentation, tuple(line2d[0]), tuple(line2d[1]), (255, 255, 0), 2)
 
-        mid_x = int((line2d[0][0] + line2d[1][0]) / 2)
-        mid_y = int((line2d[0][1] + line2d[1][1]) / 2)
+      #  mid_x = int((line2d[0][0] + line2d[1][0]) / 2)
+      #  mid_y = int((line2d[0][1] + line2d[1][1]) / 2)
         wrapped_text = textwrap.fill(rel[2], width=15)
         json_table['relations'].append({'sub': rel[0], 'obj': rel[1], 'rel': wrapped_text})
 
     print("targets_ids: ", targets_ids)
     print("anchors_ids: ", anchors_ids)
-    for obj in result:
-        if 'A wall on the side of a building' in obj['description']:
-            #print("Filtered 3D", int(obj['id']), targets, anchors)
-            continue
-        if (len(targets)>0 or len(anchors)>0) and int(obj['id']) not in targets and int(obj['id']) not in anchors:
-            continue
-        cx, cy, cz = np.array(obj['bbox_center'])
-        dx, dy, dz = np.array(obj['bbox_extent']) / 2.0
-        box_3d = np.array([
-            [cx - dx, cy - dy, cz - dz],  # Front-bottom-left
-            [cx + dx, cy - dy, cz - dz],  # Front-bottom-right
-            [cx + dx, cy + dy, cz - dz],  # Front-top-right
-            [cx - dx, cy + dy, cz - dz],  # Front-top-left
-            [cx - dx, cy - dy, cz + dz],  # Back-bottom-left
-            [cx + dx, cy - dy, cz + dz],  # Back-bottom-right
-            [cx + dx, cy + dy, cz + dz],  # Back-top-right
-            [cx - dx, cy + dy, cz + dz],  # Back-top-left
-        ])
 
-        box_2d = project_point_cloud_to_image(segmentation, depth, camera_pose, intrinsics, box_3d)
-        #print(box_2d)
-        
-        # Define box edges (pairs of points to connect)
-        edges = [
-            (0, 1), (1, 2), (2, 3), (3, 0),  # Front face
-            (4, 5), (5, 6), (6, 7), (7, 4),  # Back face
-            (0, 4), (1, 5), (2, 6), (3, 7)   # Connect front and back
-        ]
-        
-        # Draw the bounding box edges
-        for (i, j) in edges:
-            #print(tuple(box_2d[i]), tuple(box_2d[j]))
-            cv2.line(segmentation, tuple(box_2d[i]), tuple(box_2d[j]), (0, 0, 255), 1)
-        
-        text = f"{obj['id']}"
-        # Get the text size to create a background rectangle
-        (text_width, text_height), _ = cv2.getTextSize(text, font, font_scale, thickness)
-
-        # Define the rectangle's top-left and bottom-right corners (padding the text a bit)
-        top_left = (box_2d[0][0] - 10, box_2d[0][1] + 10)
-        bottom_right = (box_2d[0][0] + text_width + 10, box_2d[0][1] - text_height - 10)
-
-        # Draw a white rectangle as the background
-        if obj['id'] in final_targets:
-            color = (144, 128, 250)
-        elif text in targets_ids:
-            color = (144, 238, 144)
-        elif text in anchors_ids:
-            color = (250, 206, 135)
-        else:
-            color = (169, 169, 169)
-        print(obj['id'], color)
-        cv2.rectangle(segmentation, top_left, bottom_right, color, thickness=cv2.FILLED)
-        cv2.putText(segmentation, text, (box_2d[0][0], box_2d[0][1]), font, font_scale, COLOR_CV, thickness, cv2.LINE_AA)
-
-    cv2.imwrite(os.path.join(SAVE_PATH, f"overlayed_masks_sam_and_graph_{save_filename}"), segmentation)
-    with open(os.path.join(SAVE_PATH, f"table_{save_filename.split('.')[0]}.json"), "w") as f:
+    with open(os.path.join(SAVE_PATH, f"table_{save_filename}.json"), "w") as f:
         json.dump(json_table, f)
