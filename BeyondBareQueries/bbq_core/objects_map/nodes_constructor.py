@@ -2,6 +2,7 @@ import os
 import gzip
 import pickle
 
+import cv2
 import torch
 torch.set_grad_enabled(False)
 from loguru import logger
@@ -39,6 +40,8 @@ class NodesConstructor:
         # aggregate information about detected objects
         detected_objects, segmentation_vis = self.detections_assembler(
             step_idx, color, depth, intrinsics, pose, masks_result, descriptors)
+        # Save and show the final image
+        cv2.imwrite("outputs/latest_sam.png", segmentation_vis)
 
         if len(detected_objects) == 0 and len(self.objects) != 0:
             logger.debug("no detected objects")
@@ -55,7 +58,6 @@ class NodesConstructor:
             results = {'objects': self.objects.to_serializable()}
             with gzip.open(os.path.join(save_path, f"frame_{step_idx}_objects.pkl.gz"), "wb") as f:
                 pickle.dump(results, f)
-        return segmentation_vis
             
     def postprocessing(self):
         self.objects = postprocessing(self.objects, self.config)
