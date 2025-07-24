@@ -23,8 +23,8 @@ from bbq_core.objects_map.nodes_constructor import NodesConstructor
 SAVE_PATH = "outputs"
 os.makedirs(SAVE_PATH, exist_ok=True)
 INTRINSICS = np.eye(4, 4)
-INTRINSICS[:3, :3] = np.array([262.49603271484375, 0.0, 322.422119140625, 0.0, 
-                               262.49603271484375, 182.1229248046875, 
+INTRINSICS[:3, :3] = np.array([524.9920654296875, 0.0, 644.84423828125, 
+                               0.0, 524.9920654296875, 364.245849609375, 
                                0.0, 0.0, 1.0]).reshape(3, 3)
 
 with open("/home/docker_user/BeyondBareQueries/BeyondBareQueries/config.yaml") as file:
