@@ -65,7 +65,7 @@ d. Сервер с демо (gradio):
 ./docker/into.sh
 conda activate perception_models
 cd ~/BeyondBareQueries/
-python gradio.py
+python gradio_web.py
 ```
 
 После чего либо воспользоваться автоматическим пробросом портов от VS Code, либо самому пробросить порты так, чтобы можно было визуализировать демо в браузере компьютера, подключенного к серверу.
