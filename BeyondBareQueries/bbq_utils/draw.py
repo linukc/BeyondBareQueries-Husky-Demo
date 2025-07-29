@@ -80,6 +80,11 @@ def project_point_cloud_to_image(image, depth_image, camera_pose, intrinsics_mat
     return pixel_coords
 
 def draw_answer(result, targets, anchors, relations, user_query, LLM_answer, save_filename, SAVE_PATH, no_json=True, final_targets=[]):
+    print(f"Result: {[obj['id'] for obj in result]}")
+    print(f"Targets: {targets}")
+    print(f"Anchors: {anchors}")
+    print(f"Final targets: {final_targets}")
+
     json_table = {'objects': [], 'relations': []}
     # camera_pose = np.linalg.inv(pose)
 
@@ -93,30 +98,31 @@ def draw_answer(result, targets, anchors, relations, user_query, LLM_answer, sav
         if 'A wall on the side of a building' not in obj['description'] and obj['id'] not in targets and obj['id'] not in anchors 
     ])
 
-    print(points.shape)
+    #print("step 1, points not target not anchors")
+    #print(points.shape)
+    #print(points)
     labels = [f"{obj['id']}: {obj['description']}" for obj in result
              if 'A wall on the side of a building' not in obj['description'] and obj['id'] not in targets and obj['id'] not in anchors 
              ]  # Labels for each point
     others_ids = [l.split(':')[0] for l in labels]
+    #print(labels)
     # Extract X, Y, Z coordinates
-    x, y, z = points[:, 0], points[:, 1], points[:, 2]
-    
-    # Create 3D figure
-    # Create a figure with two subplots (one for 3D plot, one for text)
+
     fig = plt.figure(figsize=(5, 5))  # Wider figure
     ax1 = fig.add_subplot(111, projection='3d')
 
     ax1.view_init(elev=0, azim=-90) 
-    #ax1.set_xlim([-0.15, 2])  # Set X-axis limits from 0 to 1
-    #ax1.set_ylim([-0.15, 1])  # Set Y-axis limits from 0 to 1
-    #ax1.set_zlim([0.5, 3])  # Set Z-axis limits from 0 to 1
-    # Plot points
-    ax1.scatter(x, y, z, c='grey', marker='o', s=50)
+
+
+    if len(points) > 0:
+        x, y, z = points[:, 0], points[:, 1], points[:, 2]
+        ax1.scatter(x, y, z, c='grey', marker='o', s=50)
     
+    #print(f"try to draw {points.shape} but use result with {result}")
     # Add labels to each point
-    for i in range(len(points)):
-        ax1.text(x[i], y[i], z[i]+0.02, result[i]['id'], fontsize=12, color='black', ha='center',)
-        json_table['objects'].append({'label': labels[i], 'type': 'others'})
+        for i in range(len(points)):
+            ax1.text(x[i], y[i], z[i]+0.02, others_ids[i], fontsize=12, color='black', ha='center',)
+            json_table['objects'].append({'label': labels[i], 'type': 'others'})
 
     anchors_ids = []
     if len(anchors) > 0:
@@ -136,7 +142,7 @@ def draw_answer(result, targets, anchors, relations, user_query, LLM_answer, sav
         
         # Add labels to each point
         for i in range(len(points)):
-            ax1.text(x[i], y[i], z[i]+0.02, anchors[i], fontsize=12, color='black', ha='center',)
+            ax1.text(x[i], y[i], z[i]+0.02, anchors_ids[i], fontsize=12, color='black', ha='center',)
             json_table['objects'] = [{'label': labels[i], 'type': 'anchors'}] + json_table['objects']
 
         # Labels
@@ -145,10 +151,7 @@ def draw_answer(result, targets, anchors, relations, user_query, LLM_answer, sav
         ax1.set_zlabel('Z')
 
     targets_ids = []
-    if len(targets) > 1:
-        print(f"Result: {[obj['id'] for obj in result]}")
-        print(f"Targets: {targets}")
-        print(f"Final targets: {final_targets}")
+    if len(targets) > 0 and set(targets)!=set(final_targets):
         points = np.array([
             obj['bbox_center'] for obj in result
             if 'A wall on the side of a building' not in obj['description'] and obj['id'] in targets and obj['id'] not in final_targets
@@ -166,7 +169,7 @@ def draw_answer(result, targets, anchors, relations, user_query, LLM_answer, sav
 
         # Add labels to each point
         for i in range(len(points)):
-            ax1.text(x[i], y[i], z[i]+0.02, targets[i], fontsize=12, color='black', ha='center',)
+            ax1.text(x[i], y[i], z[i]+0.02, targets_ids[i], fontsize=12, color='black', ha='center',)
             json_table['objects'] = [{'label': labels[i], 'type': 'targets'}] + json_table['objects']
 
     if len(final_targets) > 0:
@@ -185,7 +188,7 @@ def draw_answer(result, targets, anchors, relations, user_query, LLM_answer, sav
 
         # Add labels to each point
         for i in range(len(points)):
-            ax1.text(x[i], y[i], z[i]+0.02, targets[i], fontsize=12, color='black', ha='center',)
+            ax1.text(x[i], y[i], z[i]+0.02, final_targets[i], fontsize=12, color='black', ha='center',)
             json_table['objects'] = [{'label': labels[i], 'type': 'answer'}] + json_table['objects']
 
 
